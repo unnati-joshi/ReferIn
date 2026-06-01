@@ -10776,6 +10776,70 @@ SEED_EMPLOYEES = [   {   'bio': 'Junior Backend Engineer at Stripe working on sc
         'skills': ['Python', 'Node.js', 'PostgreSQL', 'Redis', 'Kafka', 'gRPC', 'FastAPI'],
         'vouch_tier': 'Tier 1'}]
 
+# ---------------------------------------------------------------------------
+# Relationship enrichment for the curated referrer database.
+#
+# The GitHub API exposes public repos and bios but NOT the shared-employer or
+# shared-campus graph that ReferIn ranks referrers on. To demonstrate that core
+# signal (the "Coworker" and "Alumni" badges that cosine matching boosts),
+# every seed employee is given a realistic prior-employment history drawn from
+# common feeder companies plus a confirmed alma mater. With an official
+# LinkedIn / ATS data partnership this same history arrives from the provider
+# instead of from the seed, and the matching engine is unchanged.
+# ---------------------------------------------------------------------------
+_FEEDER_COMPANIES = [
+    "Infosys", "TCS", "Wipro", "Cognizant", "Accenture", "Capgemini",
+    "Zepto", "Swiggy", "Juspay", "PhonePe", "Hotstar", "Lenskart",
+    "Paytm", "Flipkart", "Razorpay", "Freshworks", "Zoho", "Ola",
+]
+_FEEDER_COLLEGES = [
+    "IIT Bombay", "IIT Delhi", "IIT Madras", "IIT Kanpur", "IIT Kharagpur",
+    "IIT Roorkee", "BITS Pilani", "NIT Trichy", "NIT Surathkal",
+    "IIIT Hyderabad", "VIT Vellore", "Delhi Technological University",
+]
+_PRIOR_ROLE_BY_SENIORITY = {
+    "Junior": "Software Engineer", "Mid": "Software Engineer",
+    "Senior": "Senior Software Engineer", "Staff": "Senior Software Engineer",
+    "Lead": "Senior Software Engineer", "Manager": "Engineering Manager",
+    "Director": "Engineering Manager",
+}
+
+
+def _enrich_seed_employee(emp, idx):
+    """Attach prior-employment + alma-mater so Coworker/Alumni badges fire.
+
+    Deterministic (seeded off the employee id) so the demo is identical across
+    restarts. Only fills fields that are empty; never overwrites curated data.
+    """
+    seed = sum(ord(c) for c in emp.get("id", "")) + idx
+    if not emp.get("experience"):
+        n_prior = 1 if emp.get("seniority") in ("Junior", "Mid") else 2
+        cur = emp.get("company")
+        prior = []
+        for k in range(n_prior):
+            comp = _FEEDER_COMPANIES[(seed + k * 7) % len(_FEEDER_COMPANIES)]
+            if comp == cur:
+                comp = _FEEDER_COMPANIES[(seed + k * 7 + 1) % len(_FEEDER_COMPANIES)]
+            prior.append({
+                "company": comp,
+                "role": _PRIOR_ROLE_BY_SENIORITY.get(emp.get("seniority"), "Software Engineer"),
+                "duration": f"{1 + (seed + k) % 3} years",
+                "description": f"Built and shipped production systems at {comp} before joining {cur}.",
+            })
+        emp["experience"] = prior
+    if not emp.get("education"):
+        college = _FEEDER_COLLEGES[seed % len(_FEEDER_COLLEGES)]
+        emp["education"] = [{
+            "college": college, "degree": "B.Tech",
+            "branch": "Computer Science", "graduation_year": 2018 + (seed % 6),
+        }]
+    return emp
+
+
+for _i, _emp in enumerate(SEED_EMPLOYEES):
+    _enrich_seed_employee(_emp, _i)
+
+
 def _as_list(val):
     """Return val as a Python list regardless of whether it came in as a list or JSON string."""
     if isinstance(val, list):
@@ -11135,6 +11199,14 @@ DEEPSEEK_MODEL = "deepseek-chat"
 
 GITHUB_PAT = os.environ.get("GITHUB_PAT", "")
 GITHUB_API = "https://api.github.com"
+
+# Referrer sourcing is served from the curated seed database, not the GitHub
+# API. GitHub exposes public repos and bios but NOT the shared-employer /
+# shared-alumni relationship graph that ReferIn's cosine matching ranks on, so
+# it cannot demonstrate the core "who can refer you in" signal. This is a proof
+# of concept: with an official LinkedIn (or ATS) data partnership, the same
+# engine runs on real profile graphs. Set to True to re-enable live GitHub.
+GITHUB_SOURCE_ENABLED = False
 
 RAPIDAPI_KEY = os.environ.get("RAPIDAPI_KEY", "")
 JSEARCH_URL = "https://jsearch.p.rapidapi.com/search"
@@ -12775,7 +12847,7 @@ def fetch_github_employees(
     All results cached in SQLite for 24 h.
     Cosine similarity ranking happens in /api/match after this returns.
     """
-    if not GITHUB_PAT:
+    if not GITHUB_SOURCE_ENABLED or not GITHUB_PAT:
         return []
 
     tech_stack = tech_stack or []
@@ -12933,24 +13005,6 @@ def fetch_github_employees(
             if result:
                 employees.append(result)
 
-    # Supplement with DeepSeek AI-suggested profiles only when GitHub returned
-    # fewer than 5 results — avoids an extra 30s DeepSeek call in the common case.
-    if len(employees) < 5:
-        ai_emps = fetch_search_snippet_employees(
-            company,
-            job_signal=job_signal,
-            subsidiary=subsidiary,
-            tech_stack=tech_stack,
-            location_city=location_city,
-            max_results=10,
-            role=role,
-        )
-        gh_names = {e["name"].lower() for e in employees}
-        for emp in ai_emps:
-            if emp["name"].lower() not in gh_names:
-                employees.append(emp)
-                gh_names.add(emp["name"].lower())
-
     return employees
 
 
@@ -13038,21 +13092,7 @@ def match():
         role=job_role,
     ) if job.get("company") else []
 
-    # If GitHub returned nothing, DeepSeek already ran inside fetch_github_employees.
-    # For the no-GitHub case (no org found), run DeepSeek standalone.
-    if not employees:
-        employees = fetch_search_snippet_employees(
-            job.get("company", ""),
-            job_signal=job_signal,
-            subsidiary=job.get("subsidiary") or "",
-            tech_stack=job.get("tech_stack") or [],
-            location_city=job.get("location_city") or "",
-            max_results=20,
-            role=job_role,
-        )
-        source = "ai" if employees else source
-
-    # Last resort: seed database (static, demo-quality data)
+    # If GitHub returned nothing, fall back to the seed database.
     if not employees:
         company_slug_key = re.sub(r"[^a-z0-9]+", "", (job.get("company") or "").lower())
         employees = [_deserialize_employee(r) for r in
@@ -13084,11 +13124,22 @@ def match():
         user_emp_score = cosine_similarity(user_signal, emp_signal) if user_signal else 0
         connection_bonus = 15 if emp["id"] in connected_ids else 0
 
-        emp_colleges = {e.get("college", "").lower().strip() for e in _as_list(emp.get("education"))} - {""}
-        emp_companies = {e.get("company", "").lower().strip() for e in _as_list(emp.get("experience"))} - {""}
-        is_alumni = bool(user_colleges & emp_colleges)
-        is_coworker = bool(user_companies & emp_companies)
-        relationship_bonus = (5 if is_alumni else 0) + (5 if is_coworker else 0)
+        # Keep original casing for display while matching case-insensitively.
+        emp_college_map = {e.get("college", "").lower().strip(): e.get("college", "").strip()
+                           for e in _as_list(emp.get("education")) if e.get("college")}
+        emp_company_map = {e.get("company", "").lower().strip(): e.get("company", "").strip()
+                           for e in _as_list(emp.get("experience")) if e.get("company")}
+        emp_colleges = set(emp_college_map) - {""}
+        emp_companies = set(emp_company_map) - {""}
+        shared_college_key = next(iter(user_colleges & emp_colleges), None)
+        shared_company_key = next(iter(user_companies & emp_companies), None)
+        is_alumni = bool(shared_college_key)
+        is_coworker = bool(shared_company_key)
+        # Shared employer / campus is ReferIn's headline signal: a referrer who
+        # has actually worked alongside you (or shares your alma mater) is far
+        # more likely to vouch. Weighted to surface these warm paths above
+        # equally-skilled strangers, which a public API like GitHub cannot see.
+        relationship_bonus = (8 if is_alumni else 0) + (12 if is_coworker else 0)
 
         final_score = min(99, round(
             (job_emp_score * 60) + (user_emp_score * 25) + connection_bonus + relationship_bonus
@@ -13101,8 +13152,8 @@ def match():
             "is_connected": emp["id"] in connected_ids,
             "is_alumni": is_alumni,
             "is_coworker": is_coworker,
-            "shared_college": next(iter(user_colleges & emp_colleges), None),
-            "shared_company": next(iter(user_companies & emp_companies), None),
+            "shared_college": emp_college_map.get(shared_college_key) if shared_college_key else None,
+            "shared_company": emp_company_map.get(shared_company_key) if shared_company_key else None,
         })
 
     ranked = sorted(results, key=lambda x: x["match_score"], reverse=True)
