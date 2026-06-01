@@ -1,6 +1,9 @@
-# ReferIn — Pitch Deck (Content Reference)
+# ReferIn Pitch Deck (Content Reference)
 
-15 slides, written to be **read** (judges won't see a live presentation). Every slide stands
+**Project:** ReferIn · **Team:** Ori
+**Members:** Breeti Bandyopadhyay, Unnati Joshi, Aishwarya Mol, Mishti Kinker, Mohana
+
+16 slides, written to be **read** (judges won't see a live presentation). Every slide stands
 on its own: a one-line summary plus up to three value bullets. Use `ReferIn-Pitch.html` as the
 visual blueprint (open in a browser; **Print → Save as PDF** to export). This file is the copy
 your team pastes into Canva/Slides.
@@ -20,9 +23,10 @@ grotesk (Hanken Grotesk / Calibri), labels & numbers in mono (JetBrains Mono).
 **Summary:** If you don't already know someone inside, you're applying through the slowest door. ReferIn gets you the warm intro.
 **Visual:** Full-bleed petrol slide, big serif headline, ReferIn logo + wordmark.
 **Bullets:**
-- Referred candidates are ~4× more likely to be hired
+- Referred candidates are about 4x more likely to get an offer
 - Most applicants have no insider to ask
 - ReferIn finds the right one in seconds
+**Footnote (on slide):** Sources: 85% of roles filled via networking, Lou Adler, LinkedIn (2016); referred candidates about 4x more likely to get an offer, Jobvite. (Full links in the References section below.)
 
 ### Slide 2 — The Problem
 **Title:** Cold Applications Disappear
@@ -60,14 +64,15 @@ grotesk (Hanken Grotesk / Calibri), labels & numbers in mono (JetBrains Mono).
 - Shared skills surfaced and highlighted in green
 - Alumni, coworker & connection paths boost the score
 
-### Slide 6 — Live Sourcing
-**Title:** Real People, Pulled Live
-**Summary:** Referrers come from live public data, not a stale hand-built list, with the source labelled on every card.
-**Visual:** 📸 The ranked list with source badges ("Live from GitHub" / "AI suggested" / "From database") and GitHub/LinkedIn/email links.
+### Slide 6 — Relationship Sourcing
+**Title:** The People Who Can Actually Vouch
+**Summary:** We rank insiders by the warm paths that get referrals accepted: a shared employer or a shared campus, surfaced on every card and labelled by source.
+**Visual:** 📸 The ranked list from the database fallback, showing the green "Coworker · Company" and amber "Alumni · College" badges, match scores, and the "From database" source label.
 **Bullets:**
-- GitHub org members + user search in real time
-- AI-suggested profiles fill thin coverage
-- Always labelled: GitHub, AI, or database
+- Coworker and Alumni paths, the signals that actually convert
+- Every card labelled by source, here a curated profile database
+- Proof of concept now; an official LinkedIn or ATS API makes it production grade
+**Note:** GitHub exposes public repos and bios but not the shared-employer / shared-campus graph that the matching ranks on, so the demo runs on a curated database. The scoring engine does not change when the data source does.
 
 ### Slide 7 — AI Outreach
 **Title:** The Message, Already Written
@@ -115,13 +120,13 @@ grotesk (Hanken Grotesk / Calibri), labels & numbers in mono (JetBrains Mono).
 - Editorial design, not your average hackathon UI
 
 ### Slide 12 — How It Works (architecture)
-**Title:** Simple Stack, Live Data
-**Summary:** A lean React + Flask app wired to real APIs and an LLM, with no heavy ML dependencies.
-**Visual:** Architecture diagram: Job Description → LLM parse → [GitHub API + AI + Jobs API] → fit-scoring engine → ranked referrers + intro draft. Logos: React, Flask, DeepSeek, GitHub.
+**Title:** Simple Stack, Swappable Data
+**Summary:** A lean React + Flask app wired to a language model and a relationship graph, with no heavy ML dependencies.
+**Visual:** Architecture diagram: Job Description → LLM parse (DeepSeek) → Relationship DB (curated, LinkedIn ready) → fit + relationship scoring engine → ranked referrers + intro draft. Logos: React, Flask, DeepSeek.
 **Bullets:**
-- React + Vite + Tailwind ↔ Flask + SQLite
-- DeepSeek parses & drafts; GitHub + Jobs APIs run live
-- Matching in pure Python: synonyms + TF-IDF cosine
+- React, Vite and Tailwind talking to Flask and SQLite
+- DeepSeek parses the posting and drafts the intro message
+- Matching in pure Python: TF-IDF cosine plus shared employer and campus scoring; swap the data source for a LinkedIn API and the engine is unchanged
 
 ### Slide 13 — Key Differentiator
 **Title:** Not a Job Board. Not LinkedIn Search.
@@ -141,14 +146,33 @@ grotesk (Hanken Grotesk / Calibri), labels & numbers in mono (JetBrains Mono).
 - Free now; Pro tier + employer referral tools next
 - Later: opt-in referrers, verified alumni paths, response tracking
 
-### Slide 15 — Team & Call to Action
+### Slide 15 — Good for Referrers, Too (two-sided network)
+**Title:** Good for Referrers, Too
+**Summary:** ReferIn is not only for job seekers. The employees who refer win as well, and that is what makes the network grow.
+**Visual:** Two cards side by side. Left "For candidates", right "For referrers".
+**For candidates:**
+- A warm intro instead of the application void
+- Ranked by real fit and real relationships
+- A tailored message, already written
+- Never the same person contacted twice
+**For referrers:**
+- Pre-qualified, high-fit candidates land in their inbox
+- Companies already pay a referral bonus, often a thousand dollars or more, per successful hire
+- Less time wasted and less reputation risk on a weak referral
+- They earn it with one click, so they keep coming back
+**Bottom line:** Every accepted referral pays the employee and opens a door for a candidate. Both sides compound.
+
+### Slide 16 — Team & Call to Action
 **Title:** Try ReferIn. Get Referred In.
-**Summary:** Built end-to-end during the hackathon — live and working today.
-**Visual:** Petrol closing slide — logo + wordmark, the live URL / QR code, team initials.
-**Bullets:**
-- Full-stack team: React, Flask, live APIs + LLM
-- Try it live: [your URL / QR code]
-- [Add each member's standout credential]
+**Summary:** Built end to end during the hackathon by Team Ori. Live and working today.
+**Visual:** Petrol closing slide, logo + wordmark, the live URL / QR code, and the five team members as name chips.
+**Team Ori:**
+- Breeti Bandyopadhyay
+- Unnati Joshi
+- Aishwarya Mol
+- Mishti Kinker
+- Mohana
+**Call to action:** Try it live, add your deployment URL or a QR code.
 
 ---
 
@@ -158,7 +182,8 @@ Real captures from the running app — drop these onto the matching slides in Ca
 | File | Use on slide | Shows |
 |---|---|---|
 | `01-landing.png` | 3 (Solution) | Landing page incl. the hero match card |
-| `03-find-referrers.png` | 4, 5, 6, 7 | Full flow: paste box + parsed job, ranked results, "Live from GitHub", match %, and the message panel |
+| `03-find-search.png` | 4 (Search) | The "Find the right referrer" hero with the pasted job description and the parsed job pill |
+| `03-find-referrers.png` | 5, 6, 7 | Database-fallback flow: ranked results with match %, green shared skills, "Coworker · Company" and "Alumni · College" badges, the "From database" label, and the drafted message panel |
 | `02-opportunities-contacted.png` | 8 (Tracking) | "Already reached out" panel + how-it-works |
 | `06-resume-extraction.png` | 9 (Auto resume) | DeepSeek extraction-preview modal |
 | `05-profile.png` | 9 (Auto resume) | Profile page with avatar + editable fields |
@@ -166,14 +191,23 @@ Real captures from the running app — drop these onto the matching slides in Ca
 | `08-jobs-results.png` | 10 (Job search) | Live job result cards with Apply / Find referrer |
 | `09-theme-dark.png`, `10-theme-violet.png`, `11-theme-sand.png` | 11 (Experience) | Same screen across themes (place beside the light shots) |
 
+## References (for the stats on slide 1)
+- **85% of jobs filled via networking** — Lou Adler, "New Survey Reveals 85% of All Jobs are Filled Via Networking," LinkedIn (2016): https://www.linkedin.com/pulse/new-survey-reveals-85-all-jobs-filled-via-networking-lou-adler
+  - Note: this came from a single non scientific LinkedIn poll, so frame it as "widely cited" rather than peer reviewed.
+- **Referred candidates about 4x more likely to get an offer; referrals make up roughly 40% of hires from about 7% of applicants** — Jobvite: https://www.jobvite.com/blog/4-reasons-to-invest-in-employee-referrals/
+  - Aggregated overview: Zippia, "Employee Referral Statistics": https://www.zippia.com/advice/employee-referral-statistics/
+- **Employee referral bonuses (slide 15)** — most companies pay employees a cash bonus for a successful referral hire, commonly around a thousand dollars or more. Overview: Zippia / SHRM employee referral data (same Zippia link above). Frame the dollar figure as "often" rather than a fixed number.
+
+Both stat citations are embedded as live hyperlinks in the .pptx (slide 1 footnote: "LinkedIn (2016)" and "Jobvite").
+
 ## Before you submit
-- **Fill the placeholders:** live URL / QR (slides 3–15), and each teammate's credential (slide 15).
-- **Keep numbers defensible:** the "80%" / "4×" referral stats are widely cited — soften to "studies suggest" if challenged; the product itself is the proof.
+- **Fill the placeholders:** live URL / QR code (slide 16, closing). Team Ori and all five members are already on the closing slide.
+- **Keep numbers defensible:** the "80%" headline is the popular shorthand; the sourced figure is 85% via networking (Adler, above). If challenged, lean on the citation and the product itself as the proof.
 
 ## What's actually built (so claims hold up)
 - Paste a JD → DeepSeek parses role/company/skills (regex fallback).
-- Referrers pulled live: GitHub org members + search, AI-suggested profiles, seed-DB fallback, each labelled.
-- Fit score = cosine similarity of job↔candidate and you↔candidate, plus alumni / coworker / connection bonuses.
+- Referrers served from a curated profile database (proof of concept). GitHub live sourcing exists in the code but is intentionally disabled: a public API cannot see the shared-employer / shared-campus graph the matching ranks on. Same engine runs on a LinkedIn or ATS API in production.
+- Fit score = cosine similarity of job vs candidate and you vs candidate, plus alumni / coworker / connection bonuses (coworker and alumni paths weighted to surface warm intros).
 - Auto-drafted, editable intro message per referrer.
 - Sent-request tracking so the same person isn't contacted twice (badge + hide filter).
 - Resume upload → auto-extraction → review/confirm; editable profile with avatar.
