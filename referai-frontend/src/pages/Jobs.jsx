@@ -241,9 +241,10 @@ const Jobs = ({ user, onFindReferrer }) => {
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 md:px-8">
       <div className="mb-8">
-        <h2 className="text-3xl font-black tracking-tight text-main md:text-5xl">Browse Jobs.</h2>
+        <p className="eyebrow">Live listings</p>
+        <h2 className="mt-2 font-display text-4xl font-semibold tracking-tight text-main md:text-5xl">Browse jobs.</h2>
         <p className="mt-4 max-w-2xl text-base leading-7 text-muted">
-          Pick roles, companies, and countries — then hit Search. Leave roles empty to auto-select from your profile.
+          Pick roles, companies, and countries, then hit Search. Leave roles empty to auto-select from your profile.
         </p>
       </div>
 
@@ -325,17 +326,54 @@ const Jobs = ({ user, onFindReferrer }) => {
       {/* Auto-role notice */}
       {!loading && searched && autoRoles.length > 0 && (
         <p className="mb-4 text-xs text-muted">
-          Roles auto-selected from your profile — deselect or add more, then search again.
+          Roles were auto-selected from your profile. Deselect or add more, then search again.
         </p>
       )}
 
       {/* Results */}
       {loading ? (
-        <p className="text-sm text-muted">Searching…</p>
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="surface-flat space-y-3 p-4">
+              <div className="flex items-center gap-3">
+                <div className="h-9 w-9 rounded bg-[var(--surface-soft)] animate-pulse-soft" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-3 w-3/4 rounded bg-[var(--surface-soft)] animate-pulse-soft" />
+                  <div className="h-2.5 w-1/2 rounded bg-[var(--surface-soft)] animate-pulse-soft" />
+                </div>
+              </div>
+              <div className="h-2.5 w-full rounded bg-[var(--surface-soft)] animate-pulse-soft" />
+              <div className="h-2.5 w-2/3 rounded bg-[var(--surface-soft)] animate-pulse-soft" />
+            </div>
+          ))}
+        </div>
       ) : !searched ? (
-        <p className="text-sm text-muted">Set filters above and hit Search.</p>
+        <div className="surface-flat overflow-hidden">
+          <div className="border-b border-app px-5 py-4">
+            <p className="text-sm font-bold text-main">Find roles worth a referral</p>
+            <p className="mt-0.5 text-xs text-muted">Pick filters above, then send the best ones to Find Referrers.</p>
+          </div>
+          <div className="grid gap-1 p-3 sm:grid-cols-3">
+            {[
+              ["Pick or skip roles", "Choose roles and companies, or leave roles empty to auto-match from your profile."],
+              ["Search live jobs", "We pull current openings across the countries you select."],
+              ["Jump to referrers", "Hit Find referrer on any result to rank employees who can refer you in."],
+            ].map(([title, body]) => (
+              <div key={title} className="rounded-[var(--radius-sm)] p-3">
+                <p className="text-sm font-bold text-main">{title}</p>
+                <p className="mt-1 text-xs leading-5 text-muted">{body}</p>
+              </div>
+            ))}
+          </div>
+        </div>
       ) : jobs.length === 0 ? (
-        <p className="text-sm text-muted">No jobs found. Try different filters or a broader date range.</p>
+        <div className="surface-flat empty-state">
+          <div className="text-center">
+            <p className="text-4xl">🔍</p>
+            <p className="mt-3 font-bold text-main">No jobs found</p>
+            <p className="mt-1 max-w-sm text-sm text-muted">Try a broader date range, more countries, or fewer company filters.</p>
+          </div>
+        </div>
       ) : (
         <>
           <p className="mb-4 text-xs font-bold text-muted">{jobs.length} result{jobs.length !== 1 ? "s" : ""}</p>
@@ -359,9 +397,9 @@ const Jobs = ({ user, onFindReferrer }) => {
                       </div>
                     </div>
                     {pct !== null && (
-                      <div className="shrink-0 rounded-lg bg-[rgb(33_85_217_/_0.12)] px-2.5 py-1.5 text-center">
+                      <div className="shrink-0 rounded-lg bg-[rgb(from_var(--primary)_r_g_b_/_0.1)] px-2.5 py-1.5 text-center">
                         <p className="text-[10px] font-bold text-[var(--primary)]">Match</p>
-                        <p className="text-lg font-black leading-none text-[var(--primary-strong)]">{pct}%</p>
+                        <p className="stat-num text-lg leading-none text-[var(--primary-strong)]">{pct}%</p>
                       </div>
                     )}
                   </div>
@@ -374,7 +412,7 @@ const Jobs = ({ user, onFindReferrer }) => {
 
                   {(rec.min_salary || rec.max_salary) && (
                     <p className="text-xs font-bold text-emerald-600">
-                      ${rec.min_salary?.toLocaleString()} – ${rec.max_salary?.toLocaleString()}
+                      ${rec.min_salary?.toLocaleString()} to ${rec.max_salary?.toLocaleString()}
                       {rec.salary_period === "YEAR" ? "/yr" : ""}
                     </p>
                   )}

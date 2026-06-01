@@ -1,19 +1,25 @@
-# ReferAI
+<p align="center">
+  <img src="assets/banner.png" alt="ReferIn — find the person who can refer you in" width="100%" />
+</p>
 
-ReferAI helps job-seekers find the right internal referrer at their target company. Paste a job description, get a ranked list of employees whose background aligns with the role, generate a personalised outreach message, and send a referral request — all in one place.
+<p align="center">
+  <em>The hiring network built on a warm intro, not a cold application.</em>
+</p>
+
+ReferIn helps job-seekers find the right internal referrer at their target company. Paste a job description, get a ranked list of employees whose background aligns with the role, generate a personalised outreach message, send a referral request, and keep track of everyone you've already contacted — all in one place. It also browses live job listings and turns your resume into a profile automatically.
 
 ---
 
 ## What it does
 
-- **Parse any job description** — paste raw text from LinkedIn, Greenhouse, Lever, Workday, or anywhere; role, company, skills, tech stack, and location are extracted automatically via DeepSeek
-- **Live employee discovery** — searches GitHub org members in real time; supplements with AI-suggested profiles from DeepSeek's training knowledge for companies with low GitHub presence
-- **Source badge** — results are labelled "Live from GitHub", "AI suggested", or "From database" so you always know where the data came from
-- **Rank employees by match score** — skill overlap + shared background between the job, employee profile, and your own resume
-- **Contact info on every card** — GitHub profile, LinkedIn, and email links extracted directly from public profiles
-- **Profile enrichment** — upload a PDF/DOCX resume or fill in skills, education, and experience manually; match scores update immediately
-- **AI career companion** — skill gap analysis and personalised coaching tips (requires Ollama locally; works without it too)
-- **Referral requests** — send and track requests with reward tracking
+- **Paste-to-search** — drop in any job description from LinkedIn, Greenhouse, Lever, Workday, or anywhere; role, company, skills, tech stack and location are extracted automatically via DeepSeek. No boolean filters, no scrolling.
+- **Fit-ranked referrers** — employees are scored by TF-IDF cosine similarity between the job, the person's background, and your own profile, with bonuses for shared schools, past employers and connections.
+- **Live referrer sourcing** — searches GitHub org members and users in real time, supplements with AI-suggested profiles from DeepSeek for thin coverage, and falls back to the seed database. Every result is labelled **Live from GitHub**, **AI suggested**, or **From database**.
+- **AI-drafted intros** — each referrer comes with a personalised, editable outreach message built from the job and your profile. Copy or send in one click.
+- **Contacted tracking** — sent requests are remembered per person, with a "Requested" badge, a hide-contacted filter, and matching across searches, so you never message the same person twice.
+- **Resume → profile** — upload a PDF/DOCX and skills, education and experience are extracted automatically into a review-and-confirm step; edit your profile, add a photo, and match scores update immediately.
+- **Built-in job search** — browse live openings by role, company and country (roles auto-suggested from your profile), then jump straight from any listing into referrer search.
+- **Polished, themeable UI** — six light/dark themes, auto-growing inputs, live form validation, a Terms & Conditions step on signup, and clean empty states throughout.
 
 ---
 
@@ -23,8 +29,9 @@ ReferAI helps job-seekers find the right internal referrer at their target compa
 |---|---|
 | Frontend | React 19, Vite, Tailwind CSS |
 | Backend | Python 3.10+, Flask, SQLite |
-| Employee discovery | GitHub REST API (live org/user search) + DeepSeek (AI-suggested profiles) |
+| Referrer discovery | GitHub REST API (live org/user search) + DeepSeek (AI-suggested profiles) |
 | Job parsing & resume extraction | DeepSeek (`deepseek-chat`) |
+| Job listings | JSearch via RapidAPI |
 | AI coaching | Ollama (optional, local — `llama3.2:3b` default) |
 | Matching | Skill synonym map + TF-IDF cosine similarity (pure Python, no ML deps) |
 
@@ -42,12 +49,16 @@ referai/
 │
 ├── referai-frontend/
 │   ├── src/
-│   │   ├── pages/          # Landing, Auth, Student (main app), Profile (settings)
-│   │   ├── components/     # TagInput, AutocompleteInput, ExtractionPreview, Layout, etc.
+│   │   ├── pages/          # Landing, Auth, Terms, Student (Find Referrers), Jobs, Profile
+│   │   ├── components/     # TagInput, AutocompleteInput, ExtractionPreview, AutoGrowTextarea,
+│   │   │   └── common/     #   Layout, Header, Sidebar, Avatar, Logo
+│   │   ├── utils/          # validation (email + password rules)
 │   │   └── services/api.js # All fetch calls to the backend
 │   ├── package.json
 │   └── vite.config.js
 │
+├── assets/banner.svg       # README banner (on-theme)
+├── presentation/           # Pitch deck (ReferIn-Pitch.html) + content reference (PITCH.md)
 ├── to-do.md                # Feature roadmap (statuses kept up to date)
 └── how-to-run.md           # Step-by-step setup guide
 ```
@@ -108,11 +119,12 @@ Set in `referai-backend/.env` (copy from `.env.example`).
 |---|---|---|
 | `DEEPSEEK_API_KEY` | **Yes** | Job parsing, resume extraction, AI employee suggestions |
 | `GITHUB_PAT` | **Yes** | Live employee search via GitHub org/user API |
+| `RAPIDAPI_KEY` | For job search | Live job listings via JSearch (Browse Jobs) |
 | `OLLAMA_BASE_URL` | No | Local Ollama server for AI coaching (default: `http://127.0.0.1:11434`) |
 | `OLLAMA_MODEL` | No | Ollama model to use (default: `llama3.2:3b`) |
 | `VITE_API_BASE_URL` | No | Backend URL the frontend points at (default: `http://127.0.0.1:5000`) |
 
-The app runs without `DEEPSEEK_API_KEY` and `GITHUB_PAT` but employee search and job parsing will fall back to the seed database only.
+The app runs without `DEEPSEEK_API_KEY` and `GITHUB_PAT` but employee search and job parsing will fall back to the seed database only. Without `RAPIDAPI_KEY`, the Browse Jobs page returns no listings.
 
 ---
 

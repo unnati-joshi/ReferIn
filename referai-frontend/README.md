@@ -1,6 +1,6 @@
-# ReferAI
+# ReferIn
 
-ReferAI is a full-stack smart referral and hiring marketplace built for hackathon demos. It helps students move from a job link to a structured referral request, gives employees a proof-based review console, and gives recruiters a verified candidate pipeline.
+ReferIn is a full-stack smart referral and hiring marketplace built for hackathon demos. It helps students move from a job link to a structured referral request, gives employees a proof-based review console, and gives recruiters a verified candidate pipeline.
 
 ## Problem
 
@@ -8,7 +8,7 @@ Students currently apply on job boards, copy job IDs, and manually DM employees 
 
 ## Solution
 
-ReferAI creates a referral marketplace where:
+ReferIn creates a referral marketplace where:
 
 - Students paste a job ID or application link.
 - The backend parses the opportunity and ranks best-fit alumni or employees.

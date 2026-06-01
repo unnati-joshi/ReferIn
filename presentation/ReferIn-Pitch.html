@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ReferIn · Pitch Deck</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Hanken+Grotesk:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --paper:#f4f1ea; --surface:#fdfbf6; --soft:#ece7da; --ink:#1b1f23;
+      --muted:#5d6168; --faint:#9b9a90; --border:#e3ddcd;
+      --petrol:#15535f; --petrol2:#0d3b44; --teal:#0e9384; --clay:#c0552a;
+      --display:"Fraunces",Georgia,serif; --body:"Hanken Grotesk",system-ui,sans-serif; --mono:"JetBrains Mono",monospace;
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{background:#d9d4c7;font-family:var(--body);color:var(--ink);-webkit-font-smoothing:antialiased}
+    .deck{display:flex;flex-direction:column;align-items:center;gap:24px;padding:30px 16px 80px}
+
+    .stage{width:min(96vw,1180px)}
+    .card{position:relative;width:100%;aspect-ratio:16/9;border-radius:18px;overflow:hidden;
+      background:var(--paper);box-shadow:0 10px 40px rgb(27 31 35 /.18)}
+    .card::before{content:"";position:absolute;inset:0;pointer-events:none;
+      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");}
+    .accent{position:absolute;left:0;top:0;bottom:0;width:10px;z-index:2}
+
+    .pad{position:relative;z-index:1;padding:48px 58px;display:grid;grid-template-columns:1.3fr .85fr;gap:38px;height:100%}
+    .left{display:flex;flex-direction:column;justify-content:center}
+    .eyebrow{font-family:var(--mono);font-size:12.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--petrol);display:flex;align-items:center;gap:10px;margin-bottom:16px}
+    .title{font-family:var(--display);font-weight:600;font-size:42px;line-height:1.02;letter-spacing:-.02em;color:var(--ink);max-width:15ch}
+    .title em{font-style:italic;color:var(--petrol2)}
+    .lede{margin-top:14px;font-size:17.5px;line-height:1.5;color:var(--muted);max-width:34ch}
+    ul.bul{list-style:none;margin-top:22px;display:flex;flex-direction:column;gap:13px}
+    ul.bul li{font-size:18px;line-height:1.32;color:var(--ink);padding-left:24px;position:relative}
+    ul.bul li::before{content:"▪";position:absolute;left:0;color:var(--teal);font-size:16px;top:1px}
+
+    .screen{align-self:center;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:22px;height:80%}
+    .screen .lbl{font-family:var(--mono);font-size:11px;letter-spacing:.12em;color:var(--petrol);margin-bottom:12px}
+    .screen p{font-size:15px;line-height:1.5;color:var(--muted);font-style:italic}
+
+    .card.statement{background:var(--petrol)}
+    .card.statement .pad{grid-template-columns:1fr;align-content:center;gap:0}
+    .card.statement .eyebrow{color:#cfddde}
+    .card.statement .title{color:#fff;font-size:58px;max-width:20ch}
+    .card.statement .title em{color:#cfddde}
+    .card.statement .lede{color:#cfe0e1;font-size:20px;max-width:46ch}
+    .card.statement ul.bul li{color:#dfe7e6;font-size:18px}
+    .card.statement ul.bul li::before{color:#5ec0c8}
+    .brandrow{display:flex;align-items:center;gap:12px;margin-bottom:26px}
+    .wordmark{font-family:var(--display);font-weight:600;font-size:24px;color:#fff}
+    .wordmark b{color:#cfddde;font-weight:600}
+
+    .foot{position:absolute;left:58px;right:58px;bottom:20px;z-index:2;display:flex;justify-content:space-between;font-family:var(--mono);font-size:11.5px;color:var(--faint)}
+    .card.statement .foot{color:#9fc2c6}
+    .mark{width:38px;height:38px;border-radius:11px;background:var(--petrol);display:flex;align-items:center;justify-content:center;flex:none}
+    .card.statement .mark{background:#fff}
+
+    .toolbar{position:fixed;top:14px;right:16px;z-index:50}
+    .toolbar button{font-family:var(--mono);font-size:12px;border:1px solid var(--border);background:var(--surface);color:var(--ink);padding:8px 12px;border-radius:8px;cursor:pointer}
+    .hint{position:fixed;bottom:14px;left:16px;z-index:50;font-family:var(--mono);font-size:11px;color:#6b6457}
+
+    @media print{
+      body{background:#fff}
+      .toolbar,.hint{display:none}
+      .deck{gap:0;padding:0}
+      .stage{width:100%}
+      .card{box-shadow:none;border-radius:0;page-break-after:always}
+      @page{size:landscape}
+    }
+  </style>
+</head>
+<body>
+  <div class="toolbar"><button onclick="window.print()">Print / PDF</button></div>
+  <div class="hint">↑ ↓ / ← → to move between slides</div>
+  <div class="deck" id="deck"></div>
+
+  <script>
+    const MARK = `<span class="mark"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="STROKE" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="5.5" cy="6" r="2.4" fill="STROKE" stroke="none"/><path d="M5.5 8.6c0 4.2 1.2 6.4 6 7.2" opacity="0.9"/><path d="M9.6 13.2l2.2 2.6-3.1 1.1"/><circle cx="16.5" cy="16" r="4.4"/><circle cx="16.5" cy="16" r="1.5" fill="STROKE" stroke="none"/></svg></span>`;
+    const markFor = dark => MARK.replaceAll("STROKE", dark ? "#15535f" : "#ffffff");
+
+    const SLIDES = [
+      { kind:"statement", section:"Hook",
+        titleHTML:"80% of jobs are filled through <em>referrals</em>.",
+        lede:"If you don't already know someone inside, you're applying through the slowest door. ReferIn gets you the warm intro.",
+        bullets:["Referred candidates are ~4× more likely to be hired","Most applicants have no insider to ask","ReferIn finds the right one in seconds"] },
+
+      { kind:"content", section:"The Problem", accent:"var(--clay)",
+        titleHTML:"Cold applications disappear.",
+        lede:"Everyone knows referrals work. Actually getting one is the hard part.",
+        visual:"Split image. Left: a resume falling into a void with an 'Application received' auto-reply. Right: a chaotic LinkedIn search returning hundreds of unfiltered 'Software Engineer' profiles.",
+        bullets:["Finding the right insider is manual and slow","No signal for who actually fits your background","People burn goodwill messaging the wrong people"] },
+
+      { kind:"content", section:"The Solution", accent:"var(--petrol)",
+        titleHTML:"Paste a job. <em>Meet</em> your referrer.",
+        lede:"ReferIn turns any job posting into a ranked shortlist of people who can refer you, with the message already written.",
+        visual:"The ReferIn hero / match card from the landing page: a job title resolving into a ranked referrer with Match score, Shared skills and Mutual paths.",
+        bullets:["Ranked insiders in seconds, from a pasted job description","Scored by real fit, not follower counts","A tailored intro draft, ready to send"] },
+
+      { kind:"content", section:"Effortless Search", accent:"var(--petrol)",
+        titleHTML:"Search is one <em>paste</em> away.",
+        lede:"No boolean filters, no scrolling. Drop in the description and the parsing is done for you.",
+        visual:"The Find Referrers page: the large auto-growing job-description box, with the parsed job shown as role + company + skill chips below it.",
+        bullets:["Auto-extracts role, company, skills & location","Works with LinkedIn, Greenhouse, Lever, anywhere","Jump straight from any job listing into its referrers"] },
+
+      { kind:"content", section:"AI Logic · Matching", accent:"var(--petrol)",
+        titleHTML:"Ranked by <em>real</em> fit.",
+        lede:"Every referrer gets a match score from how their background lines up with the role and with you.",
+        visual:"A referrer result card showing the Match % badge, green shared-skill badges, and Alumni / Coworker / Connected tags.",
+        bullets:["Vector similarity across job ↔ person ↔ your profile","Shared skills surfaced and highlighted in green","Alumni, coworker & connection paths boost the score"] },
+
+      { kind:"content", section:"Live Sourcing", accent:"var(--petrol)",
+        titleHTML:"Real people, pulled live.",
+        lede:"Referrers come from live public data, not a stale hand-built list, with the source labelled on every card.",
+        visual:"The ranked referrer list with source badges: 'Live from GitHub', 'AI suggested', or 'From database', plus GitHub / LinkedIn / email links per card.",
+        bullets:["GitHub org members + user search in real time","AI-suggested profiles fill thin coverage","Always labelled: GitHub, AI, or database"] },
+
+      { kind:"content", section:"AI Outreach", accent:"var(--petrol)",
+        titleHTML:"The message, already <em>written</em>.",
+        lede:"Each referrer comes with a personalised outreach draft built from the job and your profile, fully editable.",
+        visual:"The referral message panel: a drafted intro in the editor with Copy and 'Send referral request' buttons.",
+        bullets:["Tailored to the role and your background","Edit inline, copy, or send in one click","No more blank-page cold messages"] },
+
+      { kind:"content", section:"Differentiator · Tracking", accent:"var(--petrol)",
+        titleHTML:"Never message the same person <em>twice</em>.",
+        lede:"ReferIn remembers everyone you've reached out to, protecting relationships and your time.",
+        visual:"The 'Already reached out' panel listing contacted people, plus 'Requested' badges on result cards and a 'Hide already contacted' toggle.",
+        bullets:["Sent requests tracked per person","'Requested' badges + hide-contacted filter","Recognises someone even across new searches"] },
+
+      { kind:"content", section:"Auto Resume", accent:"var(--teal)",
+        titleHTML:"Resume in, <em>profile</em> done.",
+        lede:"Upload a PDF or DOCX and ReferIn fills your skills, education and experience automatically; you just confirm.",
+        visual:"Resume upload → the extraction-preview modal with detected skills/education → the profile page with avatar and editable fields.",
+        bullets:["Auto-extracts skills, education & experience","Review-and-confirm before anything saves","Editable profile + photo; matches sharpen instantly"] },
+
+      { kind:"content", section:"Job Search", accent:"var(--petrol)",
+        titleHTML:"Find the jobs, too.",
+        lede:"Browse live openings by role, company and country, then jump straight to who can refer you.",
+        visual:"The Browse Jobs page: role/company/country filter chips, result cards with match %, salary and skills, and a 'Find referrer' button on each.",
+        bullets:["Live listings filtered by role, company, country","Roles auto-suggested from your profile","Every job links straight into referrer search"] },
+
+      { kind:"content", section:"Experience", accent:"var(--petrol)",
+        titleHTML:"Built to feel <em>effortless</em>.",
+        lede:"A fast, polished interface with the small details that make a tool genuinely pleasant to use.",
+        visual:"The theme switcher (six swatches) with two or three theme variants of the same screen side by side; clean empty-state panels.",
+        bullets:["Six light & dark themes, switch in one click","Auto-growing inputs, live validation, clean empty states","Editorial design, not your average hackathon UI"] },
+
+      { kind:"content", section:"How It Works", accent:"var(--petrol)",
+        titleHTML:"Simple stack, live data.",
+        lede:"A lean React + Flask app wired to real APIs and an LLM, with no heavy ML dependencies.",
+        visual:"Architecture diagram: Job Description → LLM parse → [GitHub API + AI + Jobs API] → fit-scoring engine → ranked referrers + intro draft. Logos: React, Flask, DeepSeek, GitHub.",
+        bullets:["React + Vite + Tailwind ↔ Flask + SQLite","DeepSeek parses & drafts; GitHub + Jobs APIs run live","Matching in pure Python: synonyms + TF-IDF cosine"] },
+
+      { kind:"content", section:"Why We Win", accent:"var(--petrol)",
+        titleHTML:"Not a job board. Not LinkedIn search.",
+        lede:"ReferIn is the only tool that ranks insiders by your fit, writes the intro, and stops you contacting them twice.",
+        visual:"A comparison table — ReferIn vs. LinkedIn search vs. cold applying. Rows: Finds the right person · Ranks by your fit · Drafts outreach · Prevents duplicates. ReferIn has every check.",
+        bullets:["LinkedIn lists everyone; we rank who fits you","Search + score + draft + track in one flow","Live public data, zero manual list-building"] },
+
+      { kind:"content", section:"Market, Model & Next", accent:"var(--teal)",
+        titleHTML:"Big market, clear path forward.",
+        lede:"ReferIn serves a worldwide pool of job-seekers and grows into a two-sided referral network.",
+        visual:"A market funnel (hundreds of millions of job-seekers; callout on India & new grads) beside a short roadmap timeline: Now → Next → Later.",
+        bullets:["For students, new grads & switchers without an 'in'","Free now; Pro tier + employer referral tools next","Later: opt-in referrers, verified alumni paths, response tracking"] },
+
+      { kind:"statement", section:"Team · Call to Action",
+        titleHTML:"Try ReferIn. Get <em>referred in</em>.",
+        lede:"Built end-to-end during the hackathon — live and working today.",
+        bullets:["Full-stack team: React, Flask, live APIs + LLM","Try it live: [your URL / QR code]","[Add each member's standout credential]"] },
+    ];
+
+    const deck = document.getElementById("deck");
+    SLIDES.forEach((s, i) => {
+      const n = i + 1, total = SLIDES.length;
+      const stage = document.createElement("div");
+      stage.className = "stage";
+      const dark = s.kind === "statement";
+      const accent = s.accent || "var(--petrol)";
+      const bullets = s.bullets.map(b => `<li>${b}</li>`).join("");
+      const num = `${String(n).padStart(2,"0")} / ${total}`;
+
+      if (dark){
+        stage.innerHTML = `
+          <div class="card statement">
+            <div class="accent" style="background:var(--teal)"></div>
+            <div class="pad">
+              <div class="brandrow">${markFor(true)}<span class="wordmark">Refer<b>In</b></span>
+                <span class="eyebrow" style="margin:0 0 0 auto">${s.section}</span></div>
+              <h1 class="title">${s.titleHTML}</h1>
+              <p class="lede">${s.lede}</p>
+              <ul class="bul">${bullets}</ul>
+            </div>
+            <div class="foot"><span>ReferIn · referral intelligence</span><span>${num}</span></div>
+          </div>`;
+      } else {
+        stage.innerHTML = `
+          <div class="card">
+            <div class="accent" style="background:${accent}"></div>
+            <div class="pad">
+              <div class="left">
+                <div class="eyebrow">${markFor(false)} ${s.section}</div>
+                <h1 class="title">${s.titleHTML}</h1>
+                <p class="lede">${s.lede}</p>
+                <ul class="bul">${bullets}</ul>
+              </div>
+              <div class="screen">
+                <div class="lbl">SUGGESTED VISUAL</div>
+                <p>${s.visual}</p>
+              </div>
+            </div>
+            <div class="foot"><span>ReferIn</span><span>${num}</span></div>
+          </div>`;
+      }
+      deck.appendChild(stage);
+    });
+
+    const stages = [...document.querySelectorAll(".stage")];
+    let idx = 0;
+    const go = i => { idx = Math.max(0, Math.min(stages.length-1, i)); stages[idx].scrollIntoView({behavior:"smooth", block:"center"}); };
+    addEventListener("keydown", e => {
+      if (["ArrowDown","ArrowRight"," ","PageDown"].includes(e.key)) { e.preventDefault(); go(idx+1); }
+      else if (["ArrowUp","ArrowLeft","PageUp"].includes(e.key)) { e.preventDefault(); go(idx-1); }
+    });
+  </script>
+</body>
+</html>

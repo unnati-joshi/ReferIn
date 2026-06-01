@@ -2,8 +2,19 @@ import { useRef, useState } from "react";
 import AutocompleteInput from "../components/AutocompleteInput";
 import ExtractionPreview from "../components/ExtractionPreview";
 import TagInput from "../components/TagInput";
+import Avatar from "../components/common/Avatar";
 import { BRANCHES, COLLEGES, COMPANIES, DEGREES, INTERESTS, ROLES, SKILLS } from "../data/suggestions";
 import { updateProfile, uploadResume } from "../services/api";
+
+const MAX_AVATAR_BYTES = 2 * 1024 * 1024; // 2 MB
+
+const readFileAsDataURL = (file) =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
 
 const GRAD_YEARS = Array.from({ length: 51 }, (_, i) => new Date().getFullYear() + 5 - i);
 
@@ -35,6 +46,14 @@ const Profile = ({ user, onUserUpdate }) => {
   const [education, setEducation] = useState(user?.education || []);
   const [experience, setExperience] = useState(user?.experience || []);
 
+  // Identity fields
+  const [name, setName] = useState(user?.name || "");
+  const [location, setLocation] = useState(user?.location || "");
+  const [linkedinUrl, setLinkedinUrl] = useState(user?.linkedin_url || "");
+  const [summary, setSummary] = useState(user?.summary || "");
+  const [avatar, setAvatar] = useState(user?.avatar || "");
+  const [avatarError, setAvatarError] = useState("");
+
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
   const [extraction, setExtraction] = useState(null);
@@ -43,6 +62,21 @@ const Profile = ({ user, onUserUpdate }) => {
   const [error, setError] = useState("");
 
   const fileRef = useRef(null);
+  const avatarRef = useRef(null);
+
+  const handleAvatarChange = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setAvatarError("");
+    if (!file.type.startsWith("image/")) { setAvatarError("Please choose an image file."); return; }
+    if (file.size > MAX_AVATAR_BYTES) { setAvatarError("Image must be under 2 MB."); return; }
+    try {
+      setAvatar(await readFileAsDataURL(file));
+    } catch {
+      setAvatarError("Could not read that image.");
+    }
+  };
 
   const handleFileChange = async (e) => {
     const file = e.target.files?.[0];
@@ -67,7 +101,7 @@ const Profile = ({ user, onUserUpdate }) => {
     const confirmedEducation = confirmed.education || [];
     const confirmedExperience = confirmed.experience || [];
 
-    // Merge confirmed data into local state — capture merged values as variables
+    // Merge confirmed data into local state, capturing merged values as variables
     // so the API call below uses the same values (avoids stale-state race).
     const newSkills = [...new Set([...skills, ...confirmedSkills].map((s) => s.toLowerCase()))].map(
       (s) => confirmedSkills.find((cs) => cs.toLowerCase() === s) || skills.find((es) => es.toLowerCase() === s) || s
@@ -87,6 +121,8 @@ const Profile = ({ user, onUserUpdate }) => {
     setSaving(true);
     setError("");
     try {
+      const newSummary = confirmed.summary || summary;
+      if (confirmed.summary && !summary) setSummary(newSummary);
       const result = await updateProfile({
         userId: user.id,
         skills: newSkills,
@@ -96,7 +132,8 @@ const Profile = ({ user, onUserUpdate }) => {
         targetCompanies,
         currentRole: newCurrentRole,
         targetRole,
-        summary: confirmed.summary || "",
+        summary: newSummary,
+        name, location, linkedinUrl, avatar,
       });
       onUserUpdate(result.user);
       setSaveSuccess(true);
@@ -122,7 +159,8 @@ const Profile = ({ user, onUserUpdate }) => {
         targetCompanies,
         currentRole,
         targetRole,
-        summary: user?.summary || "",
+        summary,
+        name, location, linkedinUrl, avatar,
       });
       onUserUpdate(result.user);
       setSaveSuccess(true);
@@ -145,18 +183,72 @@ const Profile = ({ user, onUserUpdate }) => {
         />
       )}
 
-      <div className="mb-8">
-        <h2 className="text-3xl font-black tracking-tight text-main">Profile</h2>
-        <p className="mt-2 text-base text-muted">
-          Your skills, interests, and target companies improve referral matching. Upload your resume to fill these in automatically.
+      <div className="mb-6 reveal">
+        <p className="eyebrow">Your account</p>
+        <h2 className="mt-2 font-display text-4xl font-semibold tracking-tight text-main">Profile</h2>
+        <p className="mt-2 max-w-2xl text-base leading-7 text-muted">
+          Your photo, skills, interests, and target companies shape every referral match. Upload a resume to fill the details in automatically.
         </p>
       </div>
 
+      {/* Identity */}
+      <section className="surface mb-6 overflow-hidden reveal reveal-1">
+        <div className="flex flex-col gap-6 p-6 sm:flex-row sm:items-center"
+             style={{ background: "linear-gradient(140deg, rgb(from var(--primary) r g b / 0.08), transparent 70%)" }}>
+          <div className="relative shrink-0">
+            <Avatar src={avatar} name={name || user?.name} size={88} />
+            <button
+              type="button"
+              onClick={() => avatarRef.current?.click()}
+              title="Change photo"
+              className="absolute -bottom-1 -right-1 flex h-8 w-8 items-center justify-center rounded-full bg-[var(--primary)] text-white shadow-[var(--shadow)] ring-2 ring-[var(--surface)] transition-transform hover:scale-110"
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                <circle cx="12" cy="13" r="4" />
+              </svg>
+            </button>
+            <input ref={avatarRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <h3 className="truncate font-display text-2xl font-semibold text-main">{name || user?.name || "Your name"}</h3>
+            <p className="mt-0.5 truncate text-sm text-muted">{user?.email}</p>
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              {avatar
+                ? <button type="button" onClick={() => setAvatar("")} className="btn-ghost px-3 py-1.5 text-xs">Remove photo</button>
+                : <span className="text-xs text-faint">JPG or PNG · under 2 MB</span>}
+              {avatarError && <span className="text-xs font-semibold text-rose-600">{avatarError}</span>}
+            </div>
+          </div>
+        </div>
+
+        <div className="grid gap-4 border-t border-app p-6 sm:grid-cols-2">
+          <label className="block">
+            <span className="mb-2 block text-sm font-semibold text-main">Full name</span>
+            <input className="field" value={name} placeholder="Your name" onChange={(e) => setName(e.target.value)} />
+          </label>
+          <label className="block">
+            <span className="mb-2 block text-sm font-semibold text-main">Location</span>
+            <input className="field" value={location} placeholder="e.g. Bengaluru, India" onChange={(e) => setLocation(e.target.value)} />
+          </label>
+          <label className="block sm:col-span-2">
+            <span className="mb-2 block text-sm font-semibold text-main">LinkedIn</span>
+            <input className="field" value={linkedinUrl} placeholder="linkedin.com/in/your-profile" onChange={(e) => setLinkedinUrl(e.target.value)} />
+          </label>
+          <label className="block sm:col-span-2">
+            <span className="mb-2 block text-sm font-semibold text-main">Headline / summary</span>
+            <textarea className="field resize-none" rows={3} value={summary}
+                      placeholder="One or two lines about what you build and where you're headed."
+                      onChange={(e) => setSummary(e.target.value)} />
+          </label>
+        </div>
+      </section>
+
       {/* Resume upload */}
-      <section className="surface-flat mb-6 p-6">
+      <section className="surface-flat mb-6 p-6 reveal reveal-2">
         <p className="text-sm font-black uppercase tracking-wide text-muted">Resume</p>
         <p className="mt-2 text-sm leading-6 text-muted">
-          Upload a PDF or DOCX. Skills, education, experience, and interests are extracted automatically and added to your profile — they won't overwrite anything you've already added.
+          Upload a PDF or DOCX. Skills, education, experience, and interests are extracted automatically and added to your profile. Nothing you've already added gets overwritten.
         </p>
         <div className="mt-4 flex flex-wrap items-center gap-3">
           <button
@@ -188,7 +280,7 @@ const Profile = ({ user, onUserUpdate }) => {
       {/* Interests */}
       <section className="surface-flat mb-6 p-6">
         <p className="text-sm font-black uppercase tracking-wide text-muted">Interests</p>
-        <p className="mt-1 mb-4 text-sm text-muted">Domains and areas you want to work in — used to improve your match score.</p>
+        <p className="mt-1 mb-4 text-sm text-muted">Domains and areas you want to work in. These help improve your match score.</p>
         <TagInput
           tags={interests}
           onChange={setInterests}
@@ -346,7 +438,7 @@ const Profile = ({ user, onUserUpdate }) => {
                   className="field"
                   value={exp.duration || ""}
                   onChange={(e) => setExperience((prev) => prev.map((r, j) => j === i ? { ...r, duration: e.target.value } : r))}
-                  placeholder="e.g. Jun 2023 – Aug 2023"
+                  placeholder="e.g. Jun 2023 to Aug 2023"
                 />
               </label>
               <label className="block sm:col-span-2">

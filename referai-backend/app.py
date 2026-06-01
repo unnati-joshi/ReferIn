@@ -3,6 +3,7 @@ import json
 import os
 import re
 import sqlite3
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 from urllib.error import HTTPError, URLError
 from urllib.parse import quote, unquote, urlencode, urlparse
@@ -12046,7 +12047,7 @@ def company_matches(left, right):
 
 @app.route("/")
 def home():
-    return jsonify({"message": "ReferAI backend running", "version": "2.0"})
+    return jsonify({"message": "ReferIn backend running", "version": "2.0"})
 
 
 @app.route("/api/health")
@@ -12917,31 +12918,38 @@ def fetch_github_employees(
     if not all_logins:
         return []
 
-    # Fetch full profiles (core API, 5000/hr limit — well within budget)
-    employees = []
-    for login in all_logins[:max_results]:
+    # Fetch full profiles in parallel — cuts wall time from O(n*10s) to ~10s flat.
+    def _fetch_profile(login):
         profile = _gh_request(f"/users/{login}")
         if not isinstance(profile, dict):
-            continue
-        employees.append(_build_employee(login, profile, company, slug, now_str))
+            return None
+        return _build_employee(login, profile, company, slug, now_str)
 
-    # Always supplement with DeepSeek AI-suggested profiles.
-    # Adds people DeepSeek knows about that didn't appear in the GitHub org,
-    # deduped by name. Capped at 10 extra so we don't bloat the list.
-    ai_emps = fetch_search_snippet_employees(
-        company,
-        job_signal=job_signal,
-        subsidiary=subsidiary,
-        tech_stack=tech_stack,
-        location_city=location_city,
-        max_results=10,
-        role=role,
-    )
-    gh_names = {e["name"].lower() for e in employees}
-    for emp in ai_emps:
-        if emp["name"].lower() not in gh_names:
-            employees.append(emp)
-            gh_names.add(emp["name"].lower())
+    employees = []
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        futures = {pool.submit(_fetch_profile, lg): lg for lg in all_logins[:max_results]}
+        for fut in as_completed(futures):
+            result = fut.result()
+            if result:
+                employees.append(result)
+
+    # Supplement with DeepSeek AI-suggested profiles only when GitHub returned
+    # fewer than 5 results — avoids an extra 30s DeepSeek call in the common case.
+    if len(employees) < 5:
+        ai_emps = fetch_search_snippet_employees(
+            company,
+            job_signal=job_signal,
+            subsidiary=subsidiary,
+            tech_stack=tech_stack,
+            location_city=location_city,
+            max_results=10,
+            role=role,
+        )
+        gh_names = {e["name"].lower() for e in employees}
+        for emp in ai_emps:
+            if emp["name"].lower() not in gh_names:
+                employees.append(emp)
+                gh_names.add(emp["name"].lower())
 
     return employees
 
@@ -13175,7 +13183,8 @@ def submit_proof():
 @app.route("/api/referral-requests", methods=["GET", "POST"])
 def referral_requests():
     if request.method == "GET":
-        return jsonify({"requests": hydrate_requests()})
+        user_id = request.args.get("user_id")
+        return jsonify({"requests": hydrate_requests(user_id=user_id)})
 
     payload = request.get_json(silent=True) or {}
     user = find_user(payload.get("user_id"))
@@ -13352,11 +13361,17 @@ def update_profile():
         "UPDATE users SET skills=?, education=?, experience=?, interests=?, target_companies=?,"
         " current_role=COALESCE(NULLIF(?,''), current_role),"
         " target_role=COALESCE(NULLIF(?,''), target_role),"
+        " name=COALESCE(NULLIF(?,''), name),"
+        " location=COALESCE(NULLIF(?,''), location),"
+        " linkedin_url=COALESCE(NULLIF(?,''), linkedin_url),"
+        " avatar=COALESCE(NULLIF(?,''), avatar),"
         " summary=COALESCE(NULLIF(?,''), summary) WHERE id=?",
         (
             j(merged_skills), j(merged_education), j(merged_experience),
             j(merged_interests), j(merged_target_companies),
             payload.get("current_role", ""), payload.get("target_role", ""),
+            clean_text(payload.get("name", "")), clean_text(payload.get("location", "")),
+            clean_text(payload.get("linkedin_url", "")), payload.get("avatar", ""),
             payload.get("summary", ""), user_id,
         ),
     )
@@ -13471,8 +13486,14 @@ def job_recommendations():
     return jsonify({"jobs": jobs, "query_role": role or user.get("target_role") or user.get("current_role")})
 
 
-def hydrate_requests():
-    rows = db_query("SELECT * FROM referral_requests ORDER BY created_at DESC")
+def hydrate_requests(user_id=None):
+    if user_id:
+        rows = db_query(
+            "SELECT * FROM referral_requests WHERE user_id=? ORDER BY created_at DESC",
+            (user_id,),
+        )
+    else:
+        rows = db_query("SELECT * FROM referral_requests ORDER BY created_at DESC")
     return [hydrate_request(r) for r in rows]
 
 
@@ -13593,6 +13614,7 @@ def init_db():
         "ALTER TABLE users ADD COLUMN interests TEXT DEFAULT '[]'",
         "ALTER TABLE users ADD COLUMN target_companies TEXT DEFAULT '[]'",
         "ALTER TABLE users ADD COLUMN resume_text TEXT",
+        "ALTER TABLE users ADD COLUMN avatar TEXT",
     ]:
         try:
             conn.execute(migration_sql)
@@ -13641,4 +13663,4 @@ init_db()
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=True, host="0.0.0.0")

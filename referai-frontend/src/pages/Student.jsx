@@ -1,8 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import AutoGrowTextarea from "../components/AutoGrowTextarea";
 import {
   createReferralRequest,
   generateMessage,
   getMatches,
+  getSentReferrals,
   parseJob,
 } from "../services/api";
 
@@ -14,8 +16,8 @@ const Avatar = ({ name, size = "md" }) => {
   const sz = size === "sm" ? "h-8 w-8 text-xs" : "h-10 w-10 text-sm";
   return (
     <div
-      className={`${sz} shrink-0 rounded-xl font-black text-white flex items-center justify-center`}
-      style={{ background: `hsl(${hue}, 55%, 48%)` }}
+      className={`${sz} shrink-0 rounded-xl font-display font-semibold text-white flex items-center justify-center`}
+      style={{ background: `linear-gradient(140deg, hsl(${hue} 55% 46%), hsl(${(hue + 38) % 360} 60% 38%))` }}
     >
       {(name || "?")[0]}
     </div>
@@ -25,6 +27,21 @@ const Avatar = ({ name, size = "md" }) => {
 const SkeletonLine = ({ w = "full" }) => (
   <div className={`h-3 w-${w} rounded bg-[var(--surface-soft)] animate-pulse-soft`} />
 );
+
+// Stable key so a referrer is recognised as "already contacted" even when the
+// transient match id changes between searches (AI-sourced ids regenerate; name +
+// company is stable for the same person).
+const contactKey = (name, company) =>
+  `${(name || "").toLowerCase().trim()}|${(company || "").toLowerCase().trim()}`;
+
+const relativeDate = (iso) => {
+  if (!iso) return "";
+  const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
+  if (days <= 0) return "today";
+  if (days === 1) return "yesterday";
+  if (days < 30) return `${days}d ago`;
+  return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+};
 
 const Student = ({ user, pendingJobDesc, onClearPendingJobDesc }) => {
   const [jobDescription, setJobDescription] = useState("");
@@ -41,6 +58,23 @@ const Student = ({ user, pendingJobDesc, onClearPendingJobDesc }) => {
   const [expandedId, setExpandedId] = useState(null);
   const [copied, setCopied] = useState(false);
 
+  // Already-contacted tracking
+  const [sentRequests, setSentRequests] = useState([]);
+  const [hideContacted, setHideContacted] = useState(false);
+  const [showContactedPanel, setShowContactedPanel] = useState(false);
+
+  const loadSentRequests = async () => {
+    if (!user?.id) return;
+    try {
+      const res = await getSentReferrals(user.id);
+      setSentRequests(res.requests || []);
+    } catch {
+      /* non-fatal; tracking is best-effort */
+    }
+  };
+
+  useEffect(() => { loadSentRequests(); }, [user?.id]);
+
   useEffect(() => {
     if (pendingJobDesc) {
       setJobDescription(pendingJobDesc);
@@ -49,8 +83,39 @@ const Student = ({ user, pendingJobDesc, onClearPendingJobDesc }) => {
     }
   }, [pendingJobDesc]);
 
+  // Build fast lookups of who has already been contacted.
+  const { contactedById, contactedByKey, contactedList } = useMemo(() => {
+    const byId = new Map();
+    const byKey = new Map();
+    const list = [];
+    for (const r of sentRequests) {
+      const name = r.employee?.name || "";
+      const company = r.employee?.company || r.job?.company || "";
+      const meta = {
+        id: r.employee_id,
+        name: name || "A referrer",
+        role: r.employee?.role || "",
+        company,
+        jobRole: r.job?.role || "",
+        status: r.status,
+        date: r.created_at,
+      };
+      byId.set(r.employee_id, meta);
+      if (name) byKey.set(contactKey(name, company), meta);
+      list.push(meta);
+    }
+    return { contactedById: byId, contactedByKey: byKey, contactedList: list };
+  }, [sentRequests]);
+
+  const contactMeta = (emp) =>
+    contactedById.get(emp.id) || contactedByKey.get(contactKey(emp.name, emp.company)) || null;
+  const isContacted = (emp) => !!contactMeta(emp);
+
   const currentYear = new Date().getFullYear();
   const userSkillsLower = new Set((user?.skills || []).map((s) => s.toLowerCase()));
+
+  const visibleMatches = hideContacted ? matches.filter((m) => !isContacted(m)) : matches;
+  const contactedInResults = matches.filter(isContacted).length;
 
   const analyzeOpportunity = async () => {
     if (!jobDescription.trim()) { setError("Paste a job description to find referrers."); return; }
@@ -111,6 +176,7 @@ const Student = ({ user, pendingJobDesc, onClearPendingJobDesc }) => {
         message,
       });
       setRequestResult(response.request);
+      loadSentRequests(); // refresh contacted tracking
     } catch (err) {
       setError(err.message);
     }
@@ -140,37 +206,42 @@ Thank you so much for your time!
 ${account?.name || myName}`;
   };
 
+  const selectedContact = selected ? contactMeta(selected) : null;
+
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 md:px-8">
 
       {/* Header + input */}
       <section className="mb-8 grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(400px,0.7fr)]">
-        <div className="flex flex-col justify-center">
-          <h2 className="text-4xl font-black tracking-tight text-main md:text-5xl">
+        <div className="flex flex-col justify-center reveal">
+          <p className="eyebrow">Opportunities</p>
+          <h2 className="mt-2 font-display text-4xl font-semibold tracking-tight text-main md:text-5xl">
             Find the right<br />referrer.
           </h2>
           <p className="mt-4 max-w-lg text-base leading-7 text-muted">
-            Paste any job description — we rank employees at that company by how well they can refer you.
+            Paste any job description and we'll rank employees at that company by how well they can refer you in.
           </p>
         </div>
 
-        <div className="surface-flat overflow-hidden">
+        <div className="surface-flat overflow-hidden reveal reveal-1">
           <div className="border-b border-app px-5 py-4">
-            <label className="text-sm font-black text-main" htmlFor="job-desc">Job description</label>
-            <p className="mt-0.5 text-xs text-muted">LinkedIn, Greenhouse, Lever — paste the full posting.</p>
+            <label className="text-sm font-bold text-main" htmlFor="job-desc">Job description</label>
+            <p className="mt-0.5 text-xs text-muted">LinkedIn, Greenhouse, Lever. Paste the full posting.</p>
           </div>
           <div className="p-5">
-            <textarea
+            <AutoGrowTextarea
               id="job-desc"
               value={jobDescription}
               onChange={(e) => setJobDescription(e.target.value)}
-              className="field min-h-[110px] resize-y text-sm"
-              placeholder="Paste job description here…"
+              className="field text-sm leading-6"
+              minHeight={170}
+              maxHeight={560}
+              placeholder="Paste the full job description here. The box grows as you type…"
             />
             <button
               onClick={analyzeOpportunity}
               disabled={loading}
-              className="btn-primary mt-3 w-full py-3 text-sm font-black"
+              className="btn-primary mt-3 w-full py-3 text-sm"
             >
               {loading ? "Analysing…" : "Find referrers →"}
             </button>
@@ -179,11 +250,49 @@ ${account?.name || myName}`;
         </div>
       </section>
 
+      {/* Already-contacted panel */}
+      {contactedList.length > 0 && (
+        <div className="mb-6 overflow-hidden rounded-[var(--radius)] border border-app bg-[var(--surface)] shadow-[var(--shadow)]">
+          <button
+            type="button"
+            onClick={() => setShowContactedPanel((s) => !s)}
+            className="flex w-full items-center justify-between px-5 py-3.5 text-left"
+          >
+            <span className="flex items-center gap-2.5">
+              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[rgb(from_var(--accent)_r_g_b_/_0.14)] text-[var(--accent)]">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+              </span>
+              <span>
+                <span className="text-sm font-bold text-main">Already reached out</span>
+                <span className="ml-2 font-mono text-xs text-muted">{contactedList.length} {contactedList.length === 1 ? "referrer" : "referrers"}</span>
+              </span>
+            </span>
+            <span className="text-faint">{showContactedPanel ? "▲" : "▼"}</span>
+          </button>
+          {showContactedPanel && (
+            <div className="grid gap-2 border-t border-app p-4 sm:grid-cols-2">
+              {contactedList.map((c, i) => (
+                <div key={`${c.id}-${i}`} className="flex items-center gap-3 rounded-[var(--radius-sm)] border border-app soft px-3 py-2.5">
+                  <Avatar name={c.name} size="sm" />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-bold text-main">{c.name}</p>
+                    <p className="truncate text-xs text-muted">
+                      {[c.company, c.jobRole && `for ${c.jobRole}`].filter(Boolean).join(" · ")}
+                    </p>
+                  </div>
+                  <span className="shrink-0 font-mono text-[10px] text-faint">{relativeDate(c.date)}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Parsed job pill */}
       {job && (
-        <div className="mb-6 flex flex-wrap items-start justify-between gap-4 rounded-xl border border-app bg-[var(--surface-soft)] px-5 py-4">
+        <div className="mb-6 flex flex-wrap items-start justify-between gap-4 rounded-[var(--radius)] border border-app bg-[var(--surface-soft)] px-5 py-4">
           <div>
-            <p className="font-black text-main">{job.role} <span className="font-normal text-muted">at</span> {job.company}</p>
+            <p className="font-bold text-main">{job.role} <span className="font-normal text-muted">at</span> {job.company}</p>
             <p className="mt-0.5 text-xs text-muted">
               {[job.location, job.level !== "Not specified" && job.level].filter(Boolean).join(" · ")}
               {jobConfidence && <span className="ml-2 opacity-60">· {Math.round(jobConfidence * 100)}% extraction confidence</span>}
@@ -202,37 +311,50 @@ ${account?.name || myName}`;
 
         {/* Left: match list */}
         <div className="space-y-3">
-          {matches.length > 0 && matchSource && (
-            <div className="flex items-center gap-2 text-xs font-bold text-muted">
-              <span>{matches.length} result{matches.length !== 1 ? "s" : ""}</span>
-              <span>·</span>
-              {matchSource === "github" && (
-                <span className="flex items-center gap-1 text-[var(--primary)]">
-                  <svg className="h-3.5 w-3.5" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
-                  Live from GitHub
-                </span>
+          {matches.length > 0 && (
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2 text-xs font-bold text-muted">
+                <span>{visibleMatches.length} result{visibleMatches.length !== 1 ? "s" : ""}</span>
+                {matchSource && <span>·</span>}
+                {matchSource === "github" && (
+                  <span className="flex items-center gap-1 text-[var(--primary)]">
+                    <svg className="h-3.5 w-3.5" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+                    Live from GitHub
+                  </span>
+                )}
+                {(matchSource === "snippet" || matchSource === "ai" || matchSource === "github+ai") && (
+                  <span className="text-[var(--warning)]">AI suggested</span>
+                )}
+                {matchSource === "seed" && <span className="text-[var(--warning)]">From database</span>}
+              </div>
+              {contactedInResults > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setHideContacted((h) => !h)}
+                  className="flex items-center gap-1.5 rounded-full border border-app bg-[var(--surface)] px-3 py-1 text-xs font-semibold text-muted transition hover:text-main"
+                >
+                  <span className={`h-3 w-3 rounded-full border ${hideContacted ? "border-[var(--primary)] bg-[var(--primary)]" : "border-faint"}`} />
+                  Hide {contactedInResults} already contacted
+                </button>
               )}
-              {(matchSource === "snippet" || matchSource === "ai") && (
-                <span className="text-violet-500">AI suggested</span>
-              )}
-              {matchSource === "seed" && <span className="text-amber-500">From database</span>}
             </div>
           )}
 
-          {matches.map((emp) => {
+          {visibleMatches.map((emp) => {
             const isStudent = (emp.education || []).some(
               (e) => e.graduation_year && parseInt(e.graduation_year) > currentYear
             );
             const commonSkills = (emp.skills || []).filter((s) => userSkillsLower.has(s.toLowerCase()));
             const isExpanded = expandedId === emp.id;
             const isSelected = selected?.id === emp.id;
+            const contacted = isContacted(emp);
 
             return (
               <div
                 key={emp.id}
                 className={`surface-flat transition-all hover:-translate-y-0.5 ${
                   isSelected ? "ring-2 ring-[var(--primary)] ring-offset-1 ring-offset-[var(--bg)]" : ""
-                }`}
+                } ${contacted ? "opacity-75" : ""}`}
               >
                 <button className="w-full p-4 text-left" onClick={() => selectEmployee(emp)}>
                   <div className="flex items-start gap-3">
@@ -240,7 +362,15 @@ ${account?.name || myName}`;
                     <div className="min-w-0 flex-1">
                       <div className="flex items-start justify-between gap-2">
                         <div>
-                          <p className="font-black text-main">{emp.name}</p>
+                          <p className="flex items-center gap-2 font-bold text-main">
+                            {emp.name}
+                            {contacted && (
+                              <span className="badge badge-green">
+                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                                Requested
+                              </span>
+                            )}
+                          </p>
                           <p className="mt-0.5 text-xs text-muted">{emp.role}{emp.department ? ` · ${emp.department}` : ""}</p>
                           <p className="mt-0.5 text-[10px] font-bold text-faint">
                             {isStudent ? "Student" : emp.seniority}
@@ -248,7 +378,7 @@ ${account?.name || myName}`;
                         </div>
                         <div className="shrink-0 rounded-lg bg-[rgb(from_var(--primary)_r_g_b_/_0.1)] px-2.5 py-1.5 text-center">
                           <p className="text-[9px] font-bold uppercase tracking-wide text-[var(--primary)]">Match</p>
-                          <p className="text-xl font-black leading-tight text-[var(--primary-strong)]">{emp.match_score}%</p>
+                          <p className="stat-num text-xl leading-tight text-[var(--primary-strong)]">{emp.match_score}%</p>
                         </div>
                       </div>
 
@@ -317,6 +447,16 @@ ${account?.name || myName}`;
               </div>
             );
           })}
+
+          {matches.length > 0 && visibleMatches.length === 0 && (
+            <div className="surface-flat empty-state">
+              <div className="text-center">
+                <p className="font-bold text-main">You've contacted everyone here</p>
+                <p className="mt-1 text-sm text-muted">All matches are already in your sent list. Turn off the filter to see them.</p>
+                <button onClick={() => setHideContacted(false)} className="btn-secondary mt-4 px-4 py-2 text-sm">Show all</button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Right: referrer detail + message */}
@@ -329,18 +469,19 @@ ${account?.name || myName}`;
                   <div className="flex items-start gap-3">
                     <Avatar name={selected.name} size="md" />
                     <div>
-                      <p className="font-black text-main">{selected.name}</p>
+                      <p className="font-bold text-main">{selected.name}</p>
                       <p className="mt-0.5 text-xs text-muted">{selected.role} · {selected.company}</p>
                       {selected.bio && <p className="mt-2 text-xs leading-5 text-muted max-w-xs">{selected.bio}</p>}
                     </div>
                   </div>
                   <div className="shrink-0 rounded-xl border border-app px-3 py-2 text-center">
-                    <p className="text-[9px] font-bold uppercase tracking-wide text-muted">Reply</p>
-                    <p className="text-2xl font-black text-main">{selected.response_probability}%</p>
+                    <p className="text-[9px] font-bold uppercase tracking-wide text-muted">Match</p>
+                    <p className="stat-num text-2xl text-[var(--primary-strong)]">{selected.match_score}%</p>
                   </div>
                 </div>
 
                 <div className="mt-3 flex flex-wrap gap-1.5">
+                  {selectedContact && <span className="badge badge-green">Requested {relativeDate(selectedContact.date)}</span>}
                   {selected.is_connected && <span className="badge badge-green">Connected</span>}
                   {selected.is_alumni && <span className="badge badge-amber">Alumni · {selected.shared_college}</span>}
                   {selected.is_coworker && <span className="badge badge-purple">Coworker · {selected.shared_company}</span>}
@@ -374,7 +515,7 @@ ${account?.name || myName}`;
             <div className="surface-flat overflow-hidden">
               <div className="flex items-center justify-between border-b border-app px-5 py-3">
                 <div>
-                  <p className="text-sm font-black text-main">Referral message</p>
+                  <p className="text-sm font-bold text-main">Referral message</p>
                   <p className="text-[10px] text-muted mt-0.5">To {selected.name} · {selected.company}</p>
                 </div>
                 <button
@@ -408,17 +549,30 @@ ${account?.name || myName}`;
               )}
 
               <div className="border-t border-app px-5 py-4">
-                <button
-                  onClick={requestReferral}
-                  disabled={!message || detailLoading || !!requestResult}
-                  className="btn-primary px-5 py-2.5 text-sm font-black"
-                >
-                  {requestResult ? "Request sent ✓" : "Send referral request"}
-                </button>
-                {requestResult && (
-                  <p className="mt-2 text-xs font-bold text-[var(--accent)]">
-                    Request sent to {requestResult.employee?.name || selected.name}.
-                  </p>
+                {selectedContact && !requestResult ? (
+                  <>
+                    <button disabled className="btn-secondary px-5 py-2.5 text-sm opacity-70" title="You've already requested a referral from this person">
+                      Already requested ✓
+                    </button>
+                    <p className="mt-2 text-xs text-muted">
+                      You reached out {relativeDate(selectedContact.date)}{selectedContact.jobRole ? ` for ${selectedContact.jobRole}` : ""}. Avoid sending a duplicate.
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      onClick={requestReferral}
+                      disabled={!message || detailLoading || !!requestResult}
+                      className="btn-primary px-5 py-2.5 text-sm"
+                    >
+                      {requestResult ? "Request sent ✓" : "Send referral request"}
+                    </button>
+                    {requestResult && (
+                      <p className="mt-2 text-xs font-bold text-[var(--accent)]">
+                        Request sent to {requestResult.employee?.name || selected.name}. Added to your contacted list.
+                      </p>
+                    )}
+                  </>
                 )}
               </div>
             </div>
@@ -427,16 +581,43 @@ ${account?.name || myName}`;
           <div className="surface-flat empty-state">
             <div className="text-center">
               <p className="text-4xl">🔍</p>
-              <p className="mt-3 font-black text-main">No employees found</p>
+              <p className="mt-3 font-bold text-main">No employees found</p>
               <p className="mt-1 max-w-xs text-sm text-muted">No employees found at this company in the database.</p>
             </div>
           </div>
         ) : !job ? (
-          <div className="surface-flat empty-state">
-            <div className="text-center">
-              <p className="text-4xl">✉️</p>
-              <p className="mt-3 font-black text-main">Ready when you are</p>
-              <p className="mt-1 max-w-xs text-sm text-muted">Paste a job description to see matching referrers.</p>
+          <div className="surface-flat overflow-hidden">
+            <div className="border-b border-app px-5 py-4">
+              <p className="text-sm font-bold text-main">How it works</p>
+              <p className="mt-0.5 text-xs text-muted">Three steps from a posting to a warm intro.</p>
+            </div>
+            <div className="space-y-1 p-3">
+              {[
+                ["01", "Paste a job description", "We extract the role, company, and key skills."],
+                ["02", "Review ranked referrers", "Sorted by fit, with your shared skills highlighted."],
+                ["03", "Send a tailored intro", "We track it so you don't contact anyone twice."],
+              ].map(([num, title, body]) => (
+                <div key={num} className="flex gap-3 rounded-[var(--radius-sm)] p-3 transition hover:bg-[var(--surface-soft)]">
+                  <span className="font-mono text-sm font-medium text-[var(--primary)]">{num}</span>
+                  <div>
+                    <p className="text-sm font-bold text-main">{title}</p>
+                    <p className="mt-0.5 text-xs leading-5 text-muted">{body}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="border-t border-app px-5 py-4">
+              {contactedList.length > 0 ? (
+                <p className="text-xs text-muted">
+                  You've reached out to{" "}
+                  <span className="font-bold text-main">{contactedList.length}</span>{" "}
+                  {contactedList.length === 1 ? "referrer" : "referrers"} so far. Open the panel above to review them.
+                </p>
+              ) : (
+                <p className="text-xs text-muted">
+                  Tip: a complete <span className="font-bold text-main">profile</span> with your skills produces sharper matches.
+                </p>
+              )}
             </div>
           </div>
         ) : null}

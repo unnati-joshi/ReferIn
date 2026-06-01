@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="300" viewBox="0 0 1200 300" role="img" aria-label="ReferIn — find the person who can refer you in">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#15535f"/>
+      <stop offset="1" stop-color="#0d3b44"/>
+    </linearGradient>
+    <linearGradient id="teal" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#0e9384"/>
+      <stop offset="1" stop-color="#5ec0c8"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="300" fill="url(#bg)"/>
+
+  <!-- network motif, faint -->
+  <g stroke="#ffffff" fill="none" opacity="0.10">
+    <circle cx="1050" cy="150" r="150" stroke-width="2"/>
+    <circle cx="1050" cy="150" r="96" stroke-width="2"/>
+  </g>
+  <g opacity="0.16" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round">
+    <circle cx="905" cy="70" r="6" fill="#ffffff" stroke="none"/>
+    <path d="M905 76 C905 150 960 168 1030 158"/>
+    <circle cx="1050" cy="150" r="10" fill="#5ec0c8" stroke="none"/>
+  </g>
+
+  <!-- logo tile -->
+  <rect x="80" y="86" width="96" height="96" rx="24" fill="#ffffff"/>
+  <g transform="translate(80,86) scale(4)" fill="none" stroke="#15535f" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="5.5" cy="6" r="2.4" fill="#15535f" stroke="none"/>
+    <path d="M5.5 8.6c0 4.2 1.2 6.4 6 7.2" opacity="0.9"/>
+    <path d="M9.6 13.2l2.2 2.6-3.1 1.1"/>
+    <circle cx="16.5" cy="16" r="4.4"/>
+    <circle cx="16.5" cy="16" r="1.5" fill="#15535f" stroke="none"/>
+  </g>
+
+  <!-- wordmark -->
+  <text x="200" y="138" font-family="Georgia, 'Times New Roman', serif" font-size="66" font-weight="700" fill="#ffffff" letter-spacing="-1">Refer<tspan fill="#cfddde">In</tspan></text>
+  <rect x="202" y="150" width="64" height="4" rx="2" fill="url(#teal)"/>
+
+  <!-- tagline -->
+  <text x="202" y="190" font-family="Helvetica, Arial, sans-serif" font-size="22" fill="#cfe0e1">Find the person who can refer you in.</text>
+
+  <!-- feature chips -->
+  <g font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#dfe7e6">
+    <g>
+      <rect x="202" y="214" width="180" height="32" rx="16" fill="#ffffff" fill-opacity="0.08" stroke="#ffffff" stroke-opacity="0.18"/>
+      <text x="292" y="234" text-anchor="middle">Fit-ranked referrers</text>
+    </g>
+    <g>
+      <rect x="394" y="214" width="104" height="32" rx="16" fill="#ffffff" fill-opacity="0.08" stroke="#ffffff" stroke-opacity="0.18"/>
+      <text x="446" y="234" text-anchor="middle">AI intros</text>
+    </g>
+    <g>
+      <rect x="510" y="214" width="168" height="32" rx="16" fill="#ffffff" fill-opacity="0.08" stroke="#ffffff" stroke-opacity="0.18"/>
+      <text x="594" y="234" text-anchor="middle">Resume &#8594; profile</text>
+    </g>
+    <g>
+      <rect x="690" y="214" width="120" height="32" rx="16" fill="#ffffff" fill-opacity="0.08" stroke="#ffffff" stroke-opacity="0.18"/>
+      <text x="750" y="234" text-anchor="middle">Live job search</text>
+    </g>
+  </g>
+</svg>

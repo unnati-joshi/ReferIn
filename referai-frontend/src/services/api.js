@@ -11,7 +11,7 @@ const request = async (path, options = {}) => {
 
   if (!res.ok) {
     const error = await res.json().catch(() => ({}));
-    throw new Error(error.error || "ReferAI service request failed");
+    throw new Error(error.error || "ReferIn service request failed");
   }
 
   return res.json();
@@ -46,6 +46,9 @@ export const getMatches = ({ jobId, job, userId }) =>
     method: "POST",
     body: JSON.stringify({ job_id: jobId, job, user_id: userId }),
   });
+
+export const getSentReferrals = (userId) =>
+  request(`/api/referral-requests?user_id=${encodeURIComponent(userId)}`);
 
 export const createReferralRequest = ({ userId, employeeId, jobId, job, message }) =>
   request("/api/referral-requests", {
@@ -96,7 +99,7 @@ export const getJobRecommendations = ({ userId, country = "in", datePosted = "mo
   return request(`/api/jobs/recommendations?${params}`);
 };
 
-export const updateProfile = ({ userId, skills, education, experience, interests, targetCompanies, currentRole, targetRole, summary }) =>
+export const updateProfile = ({ userId, skills, education, experience, interests, targetCompanies, currentRole, targetRole, summary, name, location, linkedinUrl, avatar }) =>
   request("/api/profile", {
     method: "PUT",
     body: JSON.stringify({
@@ -109,5 +112,9 @@ export const updateProfile = ({ userId, skills, education, experience, interests
       current_role: currentRole || "",
       target_role: targetRole || "",
       summary: summary || "",
+      name: name || "",
+      location: location || "",
+      linkedin_url: linkedinUrl || "",
+      avatar: avatar || "",
     }),
   });

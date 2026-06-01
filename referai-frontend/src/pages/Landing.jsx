@@ -1,18 +1,16 @@
+import Logo from "../components/common/Logo";
+
 const Landing = ({ onAuth, theme, onToggleTheme }) => {
   return (
     <div className="page-bg">
       <header className="mx-auto flex max-w-7xl items-center justify-between px-5 py-5 md:px-8">
-        <button onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} className="flex items-center gap-3">
-          <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-950 text-sm font-black text-white dark:bg-white dark:text-slate-950">
-            R
-          </span>
-          <span className="text-lg font-black tracking-tight text-main">ReferAI</span>
+        <button onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} className="group">
+          <Logo size={40} wordClassName="text-xl" className="[&_span:first-child]:transition-transform group-hover:[&_span:first-child]:-rotate-6" />
         </button>
 
         <nav className="hidden items-center gap-7 text-sm font-semibold text-muted md:flex">
-          <a href="#product" className="hover:text-main">Product</a>
-          <a href="#teams" className="hover:text-main">Teams</a>
-          <a href="#pricing" className="hover:text-main">Pricing</a>
+          <a href="#how" className="transition-colors hover:text-main">How it works</a>
+          <a href="#features" className="transition-colors hover:text-main">Features</a>
         </nav>
 
         <div className="flex items-center gap-2">
@@ -31,16 +29,17 @@ const Landing = ({ onAuth, theme, onToggleTheme }) => {
       <main>
         <section className="mx-auto grid max-w-7xl gap-10 px-5 pb-16 pt-10 md:px-8 lg:grid-cols-[1.05fr_0.95fr] lg:pb-24 lg:pt-16">
           <div className="flex flex-col justify-center">
-            <p className="mb-4 w-fit rounded-full border border-app px-3 py-1 text-sm font-bold text-muted">
-              Referrals that start with proof
+            <p className="reveal mb-5 inline-flex w-fit items-center gap-2 rounded-full border border-app bg-[var(--surface)] px-3 py-1 text-sm font-semibold text-muted shadow-[var(--shadow)]">
+              <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent)]" />
+              Referrals ranked by real fit
             </p>
-            <h1 className="max-w-4xl text-5xl font-black leading-[1.02] tracking-tight text-main md:text-7xl">
-              The hiring network for verified employee talent.
+            <h1 className="reveal reveal-1 max-w-4xl font-display text-5xl font-semibold leading-[1.0] tracking-tight text-main md:text-[5.2rem]">
+              Find the person who can <span className="italic text-[var(--primary-strong)]">refer</span> you in.
             </h1>
-            <p className="mt-6 max-w-2xl text-lg leading-8 text-muted">
-              ReferAI matches employees to referrers and recruiters, validates proof-of-work, and gives hiring teams a cleaner pipeline of high-intent candidates.
+            <p className="reveal reveal-2 mt-6 max-w-2xl text-lg leading-8 text-muted">
+              Paste a job description. ReferIn ranks employees at that company by how well their background fits the role, drafts a tailored intro, and keeps track of everyone you've reached out to.
             </p>
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+            <div className="reveal reveal-3 mt-8 flex flex-col gap-3 sm:flex-row">
               <button onClick={() => onAuth("signup")} className="btn-primary px-6 py-4 text-base">
                 Create account
               </button>
@@ -50,24 +49,24 @@ const Landing = ({ onAuth, theme, onToggleTheme }) => {
             </div>
           </div>
 
-          <div className="surface overflow-hidden p-4">
+          <div className="surface card-hover reveal reveal-4 overflow-hidden p-4">
             <div className="rounded-lg border border-app soft p-4">
               <div className="mb-4 flex items-center justify-between">
                 <div>
                   <p className="text-sm font-black text-main">Stripe Backend Engineer</p>
-                  <p className="text-sm text-muted">Referral readiness</p>
+                  <p className="text-sm text-muted">Referrer match</p>
                 </div>
                 <span className="badge badge-green">Ready</span>
               </div>
 
               <div className="grid gap-3 sm:grid-cols-3">
                 {[
-                  ["95", "Match"],
-                  ["94%", "Reply"],
-                  ["$10", "Reward"],
+                  ["95", "Match score"],
+                  ["6", "Shared skills"],
+                  ["3", "Mutual paths"],
                 ].map(([value, label]) => (
                   <div key={label} className="surface-flat p-4">
-                    <p className="text-3xl font-black text-main">{value}</p>
+                    <p className="stat-num text-3xl text-main">{value}</p>
                     <p className="mt-1 text-sm text-muted">{label}</p>
                   </div>
                 ))}
@@ -75,7 +74,7 @@ const Landing = ({ onAuth, theme, onToggleTheme }) => {
 
               <div className="mt-4 surface-flat p-4">
                 <div className="mb-3 flex items-center justify-between">
-                  <p className="font-black text-main">Verified candidate</p>
+                  <p className="font-black text-main">Skill overlap</p>
                   <span className="badge badge-blue">Top match</span>
                 </div>
                 <div className="space-y-3">
@@ -91,47 +90,53 @@ const Landing = ({ onAuth, theme, onToggleTheme }) => {
                   <p className="mt-1 text-sm text-muted">Rahul Subramanian, Staff SWE</p>
                 </div>
                 <div className="surface-flat p-4">
-                  <p className="text-sm font-black text-main">Proof check</p>
-                  <p className="mt-1 text-sm text-muted">Payment retry safety verified</p>
+                  <p className="text-sm font-black text-main">Intro draft</p>
+                  <p className="mt-1 text-sm text-muted">Tailored to the role</p>
                 </div>
               </div>
             </div>
           </div>
         </section>
 
-        <section id="product" className="border-y border-app bg-[var(--surface)]">
-          <div className="mx-auto grid max-w-7xl gap-6 px-5 py-14 md:grid-cols-3 md:px-8">
-            <Feature title="Find referrers" body="Rank employees at your target company by how relevant their background is to the role you're applying for." />
-            <Feature title="AI-matched outreach" body="Get a tailored message draft and career companion plan based on the job description and your profile." />
-            <Feature title="Track requests" body="Send referral requests, track responses, and earn rewards when referrals convert." />
-          </div>
-        </section>
-
-        <section id="teams" className="mx-auto max-w-7xl px-5 py-16 md:px-8">
-          <div className="grid gap-8 lg:grid-cols-[0.8fr_1.2fr]">
-            <div>
-              <p className="text-sm font-black uppercase tracking-wide text-muted">Built for trust</p>
-              <h2 className="mt-3 text-4xl font-black tracking-tight text-main">A cleaner path from application to conversation.</h2>
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              {["Skill evidence", "Alumni routing", "Referral incentives", "Match analytics"].map((item) => (
-                <div key={item} className="surface-flat p-5">
-                  <p className="font-black text-main">{item}</p>
-                  <p className="mt-2 text-sm leading-6 text-muted">Designed to reduce noise while keeping the process transparent.</p>
+        <section id="how" className="border-y border-app bg-[var(--surface)]">
+          <div className="mx-auto max-w-7xl px-5 py-16 md:px-8">
+            <p className="eyebrow">How it works</p>
+            <h2 className="mt-3 max-w-2xl font-display text-4xl font-semibold tracking-tight text-main">
+              From a job posting to a warm intro, in three steps.
+            </h2>
+            <div className="mt-10 grid gap-6 md:grid-cols-3">
+              {[
+                ["01", "Paste the job", "Drop in any job description. We pull out the role, company, and the skills that matter."],
+                ["02", "Pick a referrer", "See employees at that company ranked by how well their background fits, with your shared skills highlighted."],
+                ["03", "Send and track", "Send a tailored intro in a click. ReferIn remembers who you've contacted so you never message the same person twice."],
+              ].map(([num, title, body]) => (
+                <div key={num} className="surface-flat card-hover p-6">
+                  <span className="font-mono text-sm font-medium text-[var(--primary)]">{num}</span>
+                  <h3 className="mt-3 font-display text-xl font-semibold text-main">{title}</h3>
+                  <p className="mt-2 leading-7 text-muted">{body}</p>
                 </div>
               ))}
             </div>
           </div>
         </section>
 
-        <section id="pricing" className="mx-auto max-w-7xl px-5 pb-20 md:px-8">
-          <div className="surface flex flex-col justify-between gap-6 p-8 md:flex-row md:items-center">
+        <section id="features" className="mx-auto max-w-7xl px-5 py-16 md:px-8">
+          <div className="grid gap-6 md:grid-cols-3">
+            <Feature title="Fit-ranked referrers" body="Live results from GitHub and AI, scored by how relevant each person's background is to the role you want." />
+            <Feature title="Tailored intros" body="Get a ready-to-send message draft built from the job description and your own profile and skills." />
+            <Feature title="No duplicate outreach" body="Every request is tracked, so you can see who you've already reached out to and skip them next time." />
+          </div>
+        </section>
+
+        <section className="mx-auto max-w-7xl px-5 pb-20 md:px-8">
+          <div className="surface flex flex-col justify-between gap-6 p-8 md:flex-row md:items-center"
+               style={{ background: "linear-gradient(140deg, rgb(from var(--primary) r g b / 0.08), transparent 70%)" }}>
             <div>
-              <p className="text-sm font-black uppercase tracking-wide text-muted">Launch plan</p>
-              <h2 className="mt-2 text-3xl font-black text-main">Referral rewards with a small platform fee.</h2>
+              <p className="eyebrow">Free to use</p>
+              <h2 className="mt-2 font-display text-3xl font-semibold text-main">Find your referrer for the next role.</h2>
             </div>
             <button onClick={() => onAuth("signup")} className="btn-primary px-6 py-4">
-              Start now
+              Create account
             </button>
           </div>
         </section>
@@ -144,7 +149,7 @@ const Progress = ({ label, value }) => (
   <div>
     <div className="mb-1 flex justify-between text-sm">
       <span className="font-semibold text-muted">{label}</span>
-      <span className="font-black text-main">{value}</span>
+      <span className="stat-num text-main">{value}</span>
     </div>
     <div className="h-2 overflow-hidden rounded-full bg-[var(--surface-strong)]">
       <div className="h-full rounded-full bg-[var(--primary)]" style={{ width: value }} />
@@ -153,8 +158,8 @@ const Progress = ({ label, value }) => (
 );
 
 const Feature = ({ title, body }) => (
-  <div className="surface-flat p-6">
-    <h3 className="text-xl font-black text-main">{title}</h3>
+  <div className="surface-flat card-hover p-6">
+    <h3 className="font-display text-xl font-semibold text-main">{title}</h3>
     <p className="mt-3 leading-7 text-muted">{body}</p>
   </div>
 );

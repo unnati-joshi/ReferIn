@@ -1,6 +1,6 @@
-# How to Run ReferAI
+# How to Run ReferIn
 
-ReferAI has two parts that must both be running: a **Flask backend** on port 5000 and a **React/Vite frontend** on port 5173. Open two terminals and keep both alive.
+ReferIn has two parts that must both be running: a **Flask backend** on port 5000 and a **React/Vite frontend** on port 5173. Open two terminals and keep both alive.
 
 ---
 
@@ -191,7 +191,7 @@ The database is recreated and re-seeded automatically on the next startup.
 | `ModuleNotFoundError: No module named 'flask'` | Virtual environment is not activated — run `source venv/bin/activate` first |
 | `Address already in use` on port 5000 | Something else is using port 5000. Kill it: `lsof -ti:5000 \| xargs kill` |
 | Browser shows CORS error | Confirm the Flask backend is running and `flask-cors` is installed (`pip install flask-cors`) |
-| Frontend shows "ReferAI service request failed" | Backend is not running or is on a different port — check the terminal running `python app.py` |
+| Frontend shows "ReferIn service request failed" | Backend is not running or is on a different port — check the terminal running `python app.py` |
 | `npm install` fails | Ensure Node 18+ is installed; delete `node_modules/` and try again |
 | Employee search returns seed data only | `DEEPSEEK_API_KEY` or `GITHUB_PAT` not set in `.env` — add both for live results |
 | GitHub search returns no results | Token may be missing `read:org` scope — regenerate with `read:user` and `read:org` |
